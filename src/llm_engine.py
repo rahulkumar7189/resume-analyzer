@@ -74,14 +74,23 @@ def _default_feedback(domain: str = "software_engineering") -> ResumeFeedback:
         overall_score=0.0,
         llm_ats_fit_score=0.0,
         domain=domain,
+        dimension_scores=DimensionScores(
+            skills_match=0.0,
+            experience=0.0,
+            education=0.0,
+            projects=0.0,
+            presentation=0.0
+        ),
         improvement_tips=[
             ResumeTip(
-                category="error",
+                category="presentation",
                 issue_found="LLM response could not be parsed.",
                 actionable_fix="Retry the request or check the Groq API key.",
                 impact="high",
+                star_missing=False
             )
         ],
+        hr_red_flags=["Analysis failed. Default fallback applied."]
     )
 
 
