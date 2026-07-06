@@ -52,7 +52,6 @@ docker-compose.override.yml
 models/
 models_trf/
 data/
-ats-web/
 *.pdf
 *.tex
 
