@@ -16,10 +16,13 @@ parent_dir = str(pathlib.Path(__file__).resolve().parent.parent)
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # ── Load environment variables from .env.local ────────────────────────────────
 def load_env_vars():
@@ -58,6 +61,10 @@ app = FastAPI(
     description="FastAPI service with Celery Background Jobs",
     version="3.0.0",
 )
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -197,7 +204,8 @@ class SuggestSkillRequest(BaseModel):
     skill: str
 
 @app.post("/api/suggest-skill")
-def suggest_skill(req: SuggestSkillRequest):
+@limiter.limit("20/minute")
+def suggest_skill(request: Request, req: SuggestSkillRequest):
     if not _PIPELINE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Pipeline not available")
     
@@ -219,7 +227,9 @@ def health_check():
 
 
 @app.post("/api/analyze")
+@limiter.limit("5/minute")
 async def analyze_resume(
+    request: Request,
     resume: UploadFile = File(...),
     job_description: str = Form(""),
     job_id: Optional[str] = Form(None),
@@ -337,7 +347,8 @@ class AutofixRequest(BaseModel):
     output_format: str = "tex"
 
 @app.post("/api/autofix")
-async def autofix_resume(req: AutofixRequest):
+@limiter.limit("5/minute")
+async def autofix_resume(request: Request, req: AutofixRequest):
     from api.tasks import autofix_resume_task
     task = autofix_resume_task.delay(
         resume_url=req.resume_url,
@@ -355,7 +366,8 @@ class SuggestEditsRequest(BaseModel):
     improvement_tips: list[dict]
 
 @app.post("/api/suggest-edits")
-async def suggest_edits(req: SuggestEditsRequest):
+@limiter.limit("10/minute")
+async def suggest_edits(request: Request, req: SuggestEditsRequest):
     if not _PIPELINE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Pipeline not available")
     from api.tasks import suggest_edits_task
@@ -373,7 +385,8 @@ class CompilePdfRequest(BaseModel):
     template: str = "modern"
 
 @app.post("/api/compile-pdf")
-async def compile_pdf(req: CompilePdfRequest):
+@limiter.limit("10/minute")
+async def compile_pdf(request: Request, req: CompilePdfRequest):
     if not _PIPELINE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Pipeline not available")
     from api.tasks import compile_pdf_task

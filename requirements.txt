@@ -1,5 +1,6 @@
 spacy
 huggingface_hub
+slowapi
 pdfplumber
 scikit-learn
 openai
