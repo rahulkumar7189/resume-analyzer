@@ -1,0 +1,41 @@
+We are seeking a results-driven AI/ML Intern to join our engineering team. In this role, you will have the opportunity to apply deep learning and LLM expertise to solve complex, real-world problems. You will play a crucial role in building out advanced systems, focusing heavily on computer vision, predictive modeling, and agentic AI workflows.  
+
+Key Responsibilities
+
+Develop, deploy, and maintain scalable machine learning pipelines utilizing Python, PyTorch, and OpenCV.  
+
+Engineer intelligent, conversational AI chatbots and assistants using Large Language Models (LLMs) to automate business processes.  
+
+Design NLP-driven conversational flows and utilize advanced prompt engineering for dynamic data extraction and evaluation.  
+
+Architect and optimize real-time computer vision systems for gesture recognition and classification using CNNs and MediaPipe.  
+
+Implement multi-threaded systems to isolate AI inference from application logic, ensuring high-performance execution.  
+
+Assist in designing, maintaining, optimizing, and migrating data within relational databases.  
+
+Required Qualifications
+
+Currently enrolled in a B.Tech program for Artificial Intelligence and Machine Learning.  
+
+Strong proficiency in Python, alongside familiarity with Java, C, JavaScript, PHP, or SQL.  
+
+Hands-on experience with major AI/ML frameworks and technologies, including PyTorch, OpenCV, CNNs, and MediaPipe.  
+
+Experience integrating modern generative AI ecosystems, specifically utilizing Hugging Face and OpenAI.  
+
+Proficient with standard developer tools and environments, including Git, GitHub, Docker, VS Code, Jupyter Notebook, and Linux.  
+
+Strong academic foundation in Data Structures, Algorithms Analysis, Operating Systems, Machine Learning, and OOPS.  
+
+Preferred Qualifications
+
+Experience developing automated, agentic AI workflows using platforms like n8n.  
+
+Prior internship experience handling database management or legacy data migration.  
+
+Demonstrated ability to optimize neural network architectures to maintain real-time inference on consumer hardware.  
+
+Relevant industry certifications (e.g., Google Cloud Gen AI, Machine Learning).  
+
+A proven track record of problem-solving, demonstrated through hackathon victories or technical competition medals.  

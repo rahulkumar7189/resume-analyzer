@@ -1,0 +1,30 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies required for building spaCy, psycopg2, LaTeX, and running the app
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    gcc \
+    texlive-latex-base \
+    texlive-fonts-recommended \
+    texlive-latex-extra \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code and models
+# We copy the entire directory except what is in .dockerignore
+COPY . .
+
+# Generate gRPC Python stubs from the proto file
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. protos/ats.proto
+
+# Expose the gRPC port (50051 instead of 8000)
+EXPOSE 50051
+
+# Start the gRPC server
+CMD ["python", "api/grpc_server.py"]

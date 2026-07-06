@@ -1,0 +1,135 @@
+version: '3.8'
+
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    networks:
+      - app-network
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: ats_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ats_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - app-network
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: always
+    networks:
+      - app-network
+    ports:
+      - "50051:50051"
+    environment:
+      - DATABASE_URL=postgresql://postgres:root@db:5432/ats_db
+      - REDIS_URL=redis://redis:6379/0
+      - GROQ_API_KEY=your_api_key_here
+      - HF_HOME=/app/models/huggingface
+    volumes:
+      - ./models:/app/models
+      - shared_uploads:/app/ats-web/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: always
+    networks:
+      - app-network
+    shm_size: '2gb'
+    command: celery -A api.celery_app worker --loglevel=info --concurrency=1
+    environment:
+      - DATABASE_URL=postgresql://postgres:root@db:5432/ats_db
+      - REDIS_URL=redis://redis:6379/0
+      - GROQ_API_KEY=your_api_key_here
+      - HF_HOME=/app/models/huggingface
+      - C_FORCE_ROOT=true
+    volumes:
+      - ./models:/app/models
+      - shared_uploads:/app/ats-web/public/uploads
+    depends_on:
+      - api
+      - redis
+      - db
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  web:
+    build:
+      context: ./ats-web
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - app-network
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000 # Client-side fetching URL
+      - API_URL=http://api:8000 # Server-side internal API proxy
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=neuroats-super-secret-key-12345
+      - DB_HOST=db
+      - SMTP_EMAIL=your_email@gmail.com
+      - SMTP_PASSWORD=your_app_password
+    volumes:
+      - shared_uploads:/app/public/uploads
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  postgres_data:
+  shared_uploads:

@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package ats;
+
+service AtsService {
+  // Submit a resume for analysis
+  rpc AnalyzeResume (AnalyzeRequest) returns (AnalyzeResponse);
+  
+  // Check the status of a Celery background task
+  rpc GetTaskStatus (TaskStatusRequest) returns (TaskStatusResponse);
+  
+  // Suggest a skill integration
+  rpc SuggestSkill (SuggestSkillRequest) returns (SuggestSkillResponse);
+  
+  // Trigger autofix
+  rpc AutofixResume (AutofixRequest) returns (AutofixResponse);
+  
+  // Suggest edits
+  rpc SuggestEdits (SuggestEditsRequest) returns (SuggestEditsResponse);
+  
+  // Compile PDF
+  rpc CompilePdf (CompilePdfRequest) returns (CompilePdfResponse);
+}
+
+message AnalyzeRequest {
+  bytes file_chunk = 1;
+  string file_name = 2;
+  string job_description = 3;
+  string job_id = 4;
+  string recruiter_id = 5;
+  string candidate_email = 6;
+}
+
+message AnalyzeResponse {
+  string status = 1;
+  string task_id = 2;
+  string detail = 3;
+}
+
+message TaskStatusRequest {
+  string task_id = 1;
+}
+
+message TaskStatusResponse {
+  string status = 1;
+  string state = 2;
+  string detail = 3;
+  string new_resume_url = 4;
+  string data_inserted_json = 5;
+}
+
+message SuggestSkillRequest {
+  string resume_text = 1;
+  string skill = 2;
+}
+
+message SuggestSkillResponse {
+  string status = 1;
+  string suggestion = 2;
+}
+
+message ImprovementTip {
+  string original = 1;
+  string suggested = 2;
+}
+
+message AutofixRequest {
+  string resume_url = 1;
+  string job_description = 2;
+  repeated string missing_keywords = 3;
+  repeated ImprovementTip improvement_tips = 4;
+  string output_format = 5;
+}
+
+message AutofixResponse {
+  string status = 1;
+  string task_id = 2;
+}
+
+message SuggestEditsRequest {
+  string resume_url = 1;
+  string job_description = 2;
+  repeated string missing_keywords = 3;
+  repeated ImprovementTip improvement_tips = 4;
+}
+
+message SuggestEditsResponse {
+  string status = 1;
+  string task_id = 2;
+}
+
+message CompilePdfRequest {
+  string resume_url = 1;
+  repeated ImprovementTip accepted_edits = 2;
+  string template = 3;
+}
+
+message CompilePdfResponse {
+  string status = 1;
+  string task_id = 2;
+}

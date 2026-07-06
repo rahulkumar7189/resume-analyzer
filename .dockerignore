@@ -1,0 +1,11 @@
+.git
+__pycache__
+*.pyc
+.venv
+temp/
+ats-web/
+data/
+docker-compose.yml
+Dockerfile.api
+.env
+models/
