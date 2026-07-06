@@ -5,7 +5,7 @@ import {
   UploadCloud, Users, Search, LogOut, Plus, X,
   Loader2, User, Building2, Briefcase, ChevronRight, Pencil,
   Trash2, CheckCircle2, AlertCircle, Clock, FileText, Zap, BarChart, FileWarning, XCircle,
-  Sun, Moon, Menu
+  Sun, Moon, Menu, LayoutTemplate, List
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -571,15 +571,33 @@ export default function RecruiterDashboard() {
               <div className="animate-fade-in space-y-8">
                 {activeJob ? (
                   <>
-                    <header className="flex justify-between items-end border-b border-border pb-6">
+                    <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-border pb-6 gap-6">
                       <div className="max-w-3xl pr-8">
                         <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Active Job</p>
                         <h2 className="text-4xl font-extrabold text-foreground tracking-tight mb-2">{activeJob.title}</h2>
                         <p className="text-foreground/60 text-sm leading-relaxed line-clamp-2">{activeJob.description}</p>
                       </div>
-                      <div className="bg-secondary/10 border border-secondary/20 px-6 py-3 rounded-2xl text-center shrink-0">
-                        <span className="block text-2xl font-black text-secondary">{jobCandidates.length}</span>
-                        <span className="text-xs text-foreground/60 font-bold uppercase tracking-wider">Candidates</span>
+                      <div className="flex flex-row md:flex-col items-center md:items-end gap-4 shrink-0">
+                        <div className="bg-surface border border-border p-1 rounded-lg flex items-center shadow-sm">
+                          <button 
+                            onClick={() => setViewMode('list')} 
+                            className={`p-2 rounded-md flex items-center transition-all ${viewMode === 'list' ? 'bg-secondary/20 text-secondary' : 'text-foreground/50 hover:text-foreground'}`}
+                            title="List View"
+                          >
+                            <List className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setViewMode('kanban')} 
+                            className={`p-2 rounded-md flex items-center transition-all ${viewMode === 'kanban' ? 'bg-secondary/20 text-secondary' : 'text-foreground/50 hover:text-foreground'}`}
+                            title="Kanban View"
+                          >
+                            <LayoutTemplate className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="bg-secondary/10 border border-secondary/20 px-6 py-3 rounded-2xl text-center">
+                          <span className="block text-2xl font-black text-secondary">{jobCandidates.length}</span>
+                          <span className="text-xs text-foreground/60 font-bold uppercase tracking-wider">Candidates</span>
+                        </div>
                       </div>
                     </header>
 
@@ -659,6 +677,7 @@ export default function RecruiterDashboard() {
                                   <th className="p-4 font-semibold">Candidate</th>
                                   <th className="p-4 font-semibold">Status</th>
                                   <th className="p-4 font-semibold">Experience</th>
+                                  <th className="p-4 font-semibold">Domain & Degree</th>
                                   <th className="p-4 font-semibold">Major Missing Skills</th>
                                   <th className="p-4 pr-6 text-right font-semibold">Action</th>
                                 </tr>
@@ -692,6 +711,12 @@ export default function RecruiterDashboard() {
                                       <span className="bg-surface hover:bg-surface-hover border border-border px-2.5 py-1 rounded-md text-xs font-semibold text-foreground/80">
                                         {c.experienceYears || 0} years
                                       </span>
+                                    </td>
+                                    <td className="p-4">
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-xs font-bold text-secondary uppercase tracking-wider">{c.domain?.replace('_', ' ') || 'Unknown'}</span>
+                                        <span className="text-xs text-foreground/60">{c.highestDegree || 'None'}</span>
+                                      </div>
                                     </td>
                                     <td className="p-4 max-w-xs">
                                       <div className="flex flex-wrap gap-1.5">
