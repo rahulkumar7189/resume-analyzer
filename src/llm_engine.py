@@ -417,8 +417,6 @@ def rewrite_resume(
     """
     ats_preservation_clause = """
 CRITICAL ATS RULES (PENALTY FOR IGNORING):
-    ats_preservation_clause = """
-CRITICAL ATS RULES (PENALTY FOR IGNORING):
 1. You MUST PRESERVE all existing technical skills, tools, and keywords from the original resume. Do not delete them under any circumstances.
 2. DO NOT HALLUCINATE FAKE WORK EXPERIENCE OR PROJECTS. Do NOT write completely fake job responsibilities or fake bullet points just to weave in missing keywords.
 3. If you must add MISSING KEYWORDS to improve the ATS score, ONLY list them explicitly in the "Technical Skills" or "Skills" section. DO NOT invent fake job duties using skills the candidate never actually used.
