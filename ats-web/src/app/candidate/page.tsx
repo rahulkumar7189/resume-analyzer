@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UploadCloud, FileText, User, LogOut, Loader2, CheckCircle2, XCircle, Briefcase, Zap, History, ChevronRight, AlertTriangle, FileWarning, BarChart, Sun, Moon, LayoutDashboard, Download, RefreshCw, Sparkles } from 'lucide-react'
+import { UploadCloud, FileText, User, LogOut, Loader2, CheckCircle2, XCircle, Briefcase, Zap, History, ChevronRight, AlertTriangle, FileWarning, BarChart, Sun, Moon, LayoutDashboard, Download, RefreshCw, Sparkles, Menu } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -22,6 +22,7 @@ export default function CandidateDashboard() {
   const [outputFormat, setOutputFormat] = useState<string>('tex')
   const [suggestingSkill, setSuggestingSkill] = useState<string | null>(null)
   const [skillSuggestion, setSkillSuggestion] = useState<{skill: string, text: string} | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const [suggestedEdits, setSuggestedEdits] = useState<any[] | null>(null)
   const [acceptedEdits, setAcceptedEdits] = useState<Set<number>>(new Set())
@@ -412,20 +413,63 @@ export default function CandidateDashboard() {
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <div className="w-px h-6 bg-border mx-2"></div>
-            <div className="flex items-center gap-3">
+            <div className="hidden sm:block w-px h-6 bg-border mx-2"></div>
+            <div className="hidden sm:flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                 {profile.fullName.charAt(0) || session?.user?.email?.charAt(0) || 'U'}
               </div>
-              <span className="text-sm font-medium hidden sm:block">
+              <span className="text-sm font-medium">
                 {profile.fullName || session?.user?.email}
               </span>
             </div>
-            <button onClick={handleLogout} className="p-2 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors ml-2">
+            <button onClick={handleLogout} className="hidden sm:block p-2 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors ml-2">
               <LogOut className="w-4 h-4" />
+            </button>
+
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="md:hidden p-2 text-foreground/70 hover:text-foreground"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <XCircle className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-surface p-4 space-y-2 animate-fade-in shadow-xl">
+            <button
+              onClick={() => { setActiveTab('analyzer'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                activeTab === 'analyzer' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" /> Dashboard
+            </button>
+            <button
+              onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                activeTab === 'history' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+              }`}
+            >
+              <History className="w-4 h-4" /> Analytics
+            </button>
+            <button
+              onClick={() => { setActiveTab('profile'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                activeTab === 'profile' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+              }`}
+            >
+              <User className="w-4 h-4" /> Settings
+            </button>
+            <div className="pt-2 border-t border-border mt-2">
+              <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-semibold text-destructive/80 flex items-center gap-2">
+                <LogOut className="w-4 h-4" /> Logout
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -608,7 +652,7 @@ export default function CandidateDashboard() {
                          </div>
                        </div>
                      ) : (
-                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[80vh]">
+                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[80vh]">
                       {/* Column 1: RESUME VIEW */}
                       <div className="lg:col-span-4 bg-surface border border-border rounded-2xl p-6 overflow-y-auto custom-scrollbar flex flex-col shadow-sm">
                         <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
@@ -617,7 +661,7 @@ export default function CandidateDashboard() {
                              <button className="p-1.5 rounded-md hover:bg-surface-hover text-foreground/60 hover:text-foreground"><Download className="w-4 h-4" /></button>
                            </div>
                         </div>
-                        <div className="flex-1 rounded-lg border border-border shadow-inner relative overflow-hidden bg-white">
+                        <div className="min-h-[400px] lg:min-h-0 lg:flex-1 rounded-lg border border-border shadow-inner relative overflow-hidden bg-white">
                           {result.resume_url || fixedResumeUrl ? (
                             <iframe 
                               src={`${fixedResumeUrl || result.resume_url}#toolbar=0&navpanes=0&scrollbar=0`} 

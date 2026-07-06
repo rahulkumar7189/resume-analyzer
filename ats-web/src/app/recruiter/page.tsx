@@ -5,7 +5,7 @@ import {
   UploadCloud, Users, Search, LogOut, Plus, X,
   Loader2, User, Building2, Briefcase, ChevronRight, Pencil,
   Trash2, CheckCircle2, AlertCircle, Clock, FileText, Zap, BarChart, FileWarning, XCircle,
-  Sun, Moon
+  Sun, Moon, Menu
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -68,6 +68,7 @@ export default function RecruiterDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Edit job state
   const [showEditModal, setShowEditModal] = useState(false)
@@ -450,8 +451,16 @@ export default function RecruiterDashboard() {
         </div>
       )}
 
+      {/* MOBILE DRAWER OVERLAY */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="w-72 bg-surface border-r border-border flex flex-col p-6 z-10 backdrop-blur-xl shrink-0">
+      <aside className={`fixed inset-y-0 left-0 w-72 bg-surface border-r border-border flex flex-col p-6 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-8 px-2 flex items-center space-x-3">
           <div className="w-10 h-10 bg-secondary/20 rounded-xl border border-secondary/30 flex items-center justify-center">
             <Building2 className="w-5 h-5 text-secondary" />
@@ -536,12 +545,28 @@ export default function RecruiterDashboard() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 overflow-y-auto custom-scrollbar relative flex">
+      <main className="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col w-full">
         <div className="absolute inset-0 bg-gradient-to-b from-secondary/5 to-transparent pointer-events-none h-96" />
         
+        {/* Mobile Header (Hidden on Desktop) */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-surface/50 backdrop-blur-md sticky top-0 z-30">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-secondary/20 rounded-lg border border-secondary/30 flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-secondary" />
+            </div>
+            <span className="font-bold text-foreground">NeuroATS</span>
+          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 -mr-2 text-foreground/70 hover:text-foreground"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+
         {/* Dashboard Content */}
-        <div className={`flex-1 transition-all duration-300 ${selectedCandidate ? 'pr-96 lg:pr-[30rem]' : ''}`}>
-          <div className="max-w-6xl mx-auto px-10 py-12 space-y-8 relative z-10">
+        <div className={`flex-1 transition-all duration-300 w-full ${selectedCandidate ? 'lg:pr-[30rem]' : ''}`}>
+          <div className="max-w-6xl mx-auto px-4 lg:px-10 py-6 lg:py-12 space-y-8 relative z-10 w-full">
             {activeTab === 'dashboard' ? (
               <div className="animate-fade-in space-y-8">
                 {activeJob ? (
@@ -813,7 +838,7 @@ export default function RecruiterDashboard() {
 
         {/* CANDIDATE SLIDE-OUT PANEL */}
         {selectedCandidate && (
-          <div className="absolute right-0 top-0 bottom-0 w-96 lg:w-[30rem] bg-[#0a0a0f] border-l border-border shadow-[-20px_0_40px_rgba(0,0,0,0.5)] z-40 flex flex-col animate-slide-in-right">
+          <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[30rem] bg-[#0a0a0f] border-l border-border shadow-[-20px_0_40px_rgba(0,0,0,0.5)] z-50 lg:z-40 flex flex-col animate-slide-in-right">
             <div className="flex items-center justify-between p-6 border-b border-border bg-surface hover:bg-surface-hover shrink-0">
               <h3 className="text-xl font-bold text-foreground">Candidate Analysis</h3>
               <button onClick={() => setSelectedCandidate(null)} className="p-2 text-foreground/60 hover:text-foreground bg-black/5 dark:bg-black/20 hover:bg-surface-hover rounded-full transition-colors border border-border">
