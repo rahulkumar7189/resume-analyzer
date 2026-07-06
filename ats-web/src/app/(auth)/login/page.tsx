@@ -291,6 +291,13 @@ export default function Login() {
               </div>
             </div>
           )}
+          {!isSignUp && (
+            <div className="flex justify-end pt-1">
+              <a href="/forgot-password" className="text-sm text-primary hover:text-white transition-colors">
+                Forgot Password?
+              </a>
+            </div>
+          )}
           
           <div className="pt-2">
             <button 
