@@ -61,7 +61,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -234,7 +234,8 @@ async def analyze_resume(
 
     temp_dir = pathlib.Path(parent_dir) / "temp"
     temp_dir.mkdir(exist_ok=True)
-    temp_path = str(temp_dir / f"tmp_{int(time.time())}_{resume.filename}")
+    safe_filename = pathlib.Path(resume.filename).name if resume.filename else "upload.pdf"
+    temp_path = str(temp_dir / f"tmp_{int(time.time())}_{safe_filename}")
 
     try:
         resume_text = parse_uploaded_file(resume, temp_path)
@@ -265,7 +266,7 @@ async def analyze_resume(
         try:
             upload_dir = pathlib.Path(parent_dir) / "ats-web" / "public" / "uploads"
             upload_dir.mkdir(parents=True, exist_ok=True)
-            unique_name = f"{int(time.time())}_{resume.filename}"
+            unique_name = f"{int(time.time())}_{safe_filename}"
             save_path = upload_dir / unique_name
             
             resume.file.seek(0)

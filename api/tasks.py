@@ -21,11 +21,11 @@ def _get_db_connection():
     try:
         import psycopg2
         return psycopg2.connect(
-            dbname="ats_db",
-            user="postgres",
-            password="root",
-            host="db", # In docker it will be 'db', locally 'localhost'.
-            port="5432"
+            dbname=os.getenv("DB_NAME", "ats_db"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "root"),
+            host=os.getenv("DB_HOST", "db"), # In docker it will be 'db', locally 'localhost'.
+            port=os.getenv("DB_PORT", "5432")
         )
     except Exception as e:
         print(f"[tasks] DB connection failed: {e}")
