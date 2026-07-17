@@ -50,9 +50,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:root@db:5432/ats_db
       - REDIS_URL=redis://redis:6379/0
-      - GROQ_API_KEY=your_api_key_here
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - HF_HOME=/app/models/huggingface
     volumes:
+      - ./api:/app/api
+      - ./src:/app/src
       - ./models:/app/models
       - shared_uploads:/app/ats-web/public/uploads
     depends_on:
@@ -81,10 +83,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:root@db:5432/ats_db
       - REDIS_URL=redis://redis:6379/0
-      - GROQ_API_KEY=your_api_key_here
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - HF_HOME=/app/models/huggingface
       - C_FORCE_ROOT=true
     volumes:
+      - ./api:/app/api
+      - ./src:/app/src
       - ./models:/app/models
       - shared_uploads:/app/ats-web/public/uploads
     depends_on:
@@ -117,7 +121,10 @@ services:
       - DB_HOST=db
       - SMTP_EMAIL=your_email@gmail.com
       - SMTP_PASSWORD=your_app_password
+      - WATCHPACK_POLLING=true
     volumes:
+      - ./ats-web/src:/app/src
+      - ./ats-web/public:/app/public
       - shared_uploads:/app/public/uploads
     depends_on:
       - api

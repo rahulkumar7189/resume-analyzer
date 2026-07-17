@@ -1,8 +1,33 @@
 import { NextResponse } from 'next/server';
 import { grpcClient } from '@/lib/grpc_client';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate_limit';
 
 export async function POST(req: Request) {
   console.log("RECEIVED ANALYZE REQUEST");
+  
+  // 1. Enforce Authentication
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
+  }
+
+  // 2. Enforce Rate Limiting (5 requests per minute)
+  const identifier = session.user.email || 'unknown';
+  const { success, remaining, reset } = rateLimit(`analyze_${identifier}`, 5, 60000);
+  
+  if (!success) {
+    return NextResponse.json({ detail: 'Too many requests. Please try again later.' }, { 
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': remaining.toString(),
+        'X-RateLimit-Reset': reset.toString(),
+      }
+    });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('resume') as File;

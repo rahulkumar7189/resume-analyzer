@@ -106,7 +106,7 @@ _ATS_CHECKS: list[tuple[re.Pattern, str]] = [
 
 # ── Bullet detection ──────────────────────────────────────────────────────────
 
-_BULLET_LINE_RE = re.compile(r'^[\s]*(?:[•\-–—*>▸▹○◦◆▪\x88\x0f\uf0b7]|\(cid:\d+\))\s+(.+)', re.MULTILINE)
+_BULLET_LINE_RE = re.compile(r'^[\s]*(?:[•\-–—*>▸▹○◦◆▪●\x88\x0f\uf0b7]|\(cid:\d+\))\s+(.+)', re.MULTILINE)
 
 
 def _get_bullets(text: str) -> list[str]:

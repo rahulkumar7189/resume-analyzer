@@ -158,17 +158,7 @@ def process_resume_task(
                 "by_section": {k: v for k, v in skills_by_section.items() if k not in ("HEADER",)},
             },
             "keyword_match_detail": keyword_match_detail,
-            "improvement_tips": [
-                {
-                    "category": tip.category,
-                    "issue_found": tip.issue_found,
-                    "actionable_fix": tip.actionable_fix,
-                    "impact": tip.impact,
-                    "star_missing": tip.star_missing,
-                }
-                for tip in feedback.improvement_tips
-            ],
-            "hr_red_flags": feedback.hr_red_flags,
+            "improvement_tips": feedback.model_dump(),
             "candidate_name": name,
             "candidate_email": email,
             "resume_url": resume_url,
@@ -240,7 +230,7 @@ def autofix_resume_task(
     resume_url: str,
     job_description: str,
     missing_keywords: list,
-    improvement_tips: list,
+    improvement_tips: dict,
     output_format: str = "tex"
 ):
     """
@@ -337,7 +327,7 @@ def suggest_edits_task(
     resume_url: str,
     job_description: str,
     missing_keywords: list,
-    improvement_tips: list
+    improvement_tips: dict
 ):
     """
     Parses the original resume and uses the LLM to generate a JSON array of line-by-line edit suggestions.

@@ -1,10 +1,34 @@
 import { NextResponse } from 'next/server';
 import { grpcClient } from '@/lib/grpc_client';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate_limit';
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ task_id: string }> }
 ) {
+  // 1. Enforce Authentication
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
+  }
+
+  // 2. Enforce Rate Limiting (60 requests per minute to allow for polling)
+  const identifier = session.user.email || 'unknown';
+  const { success, remaining, reset } = rateLimit(`task_poll_${identifier}`, 60, 60000);
+  
+  if (!success) {
+    return NextResponse.json({ detail: 'Too many requests. Please try again later.' }, { 
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': '60',
+        'X-RateLimit-Remaining': remaining.toString(),
+        'X-RateLimit-Reset': reset.toString(),
+      }
+    });
+  }
+
   try {
     const { task_id } = await params;
 

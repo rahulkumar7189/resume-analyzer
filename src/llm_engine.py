@@ -27,7 +27,7 @@ from pydantic import BaseModel, ValidationError
 _GROQ_API_KEY = (
     os.getenv("GROQ_API_KEY")
     or os.getenv("NEXT_PUBLIC_GROQ_API_KEY")
-    or "your_api_key_here"  # fallback for local dev
+    or "DUMMY_KEY_PLEASE_SET_IN_ENV"
 )
 
 client = OpenAI(
@@ -39,28 +39,28 @@ client = OpenAI(
 # ΓöÇΓöÇ Data models ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 from pydantic import BaseModel, Field
+from typing import List
 
-class ResumeTip(BaseModel):
-    category: str = Field(..., description="Category of the tip: skills_match, experience, education, projects, presentation")
-    issue_found: str = Field(..., description="Specific, concrete issue citing the actual resume text.")
-    actionable_fix: str = Field(..., description="Step-by-step fix with examples using the STAR format.")
-    impact: str = Field(default="medium", description="high, medium, or low")
-    star_missing: bool = Field(default=False, description="True if bullet point lacks quantified outcome")
+class SkillsAnalysis(BaseModel):
+    matched_core_skills: List[str] = Field(..., description="List of matched core skills.")
+    missing_critical_skills: List[str] = Field(..., description="List of missing critical skills.")
+    transferable_skills: List[str] = Field(..., description="List of transferable skills.")
 
+class CredibilityMetrics(BaseModel):
+    quantifiable_impact: str = Field(..., description="Evaluation of numbers, percentages, and metrics used.")
+    star_method_adherence: str = Field(..., description="Analysis of how well bullet points show actual impact.")
+    credibility_gaps: List[str] = Field(..., description="e.g., 'Claimed ML expertise but no projects listed'")
 
-class DimensionScores(BaseModel):
-    skills_match: float = Field(..., description="Match between resume skills and JD requirements (0-10)")
-    experience: float = Field(..., description="Depth, relevance, and years of work experience (0-10)")
-    education: float = Field(..., description="Degree relevance and institution prestige (0-10)")
-    projects: float = Field(..., description="Quality, complexity and relevance of projects (0-10)")
-    presentation: float = Field(..., description="Clarity, formatting, quantified achievements (0-10)")
-
+class ResultsAndOutcomes(BaseModel):
+    final_blended_score: int = Field(..., description="Holistic LLM fit score (0-100). Aggregated later with semantic score.")
+    predicted_technical_questions: List[str] = Field(..., description="AI mock interview technical questions based on CV.")
+    predicted_behavioral_questions: List[str] = Field(..., description="AI mock interview behavioral questions based on CV.")
 
 class ResumeFeedback(BaseModel):
-    llm_ats_fit_score: float = Field(..., description="Holistic ATS fit score evaluating the candidate's true potential and alignment (0-100)")
-    dimension_scores: DimensionScores = Field(...)
-    improvement_tips: list[ResumeTip] = Field(..., description="Actionable tips for the candidate")
-    hr_red_flags: list[str] = Field(default_factory=list, description="Critical HR red flags like bias, vagueness, cliches")
+    overview_summary: str = Field(..., description="A concise 2-sentence recruiter summary.")
+    skills: SkillsAnalysis = Field(...)
+    credibility: CredibilityMetrics = Field(...)
+    results: ResultsAndOutcomes = Field(...)
     
     # Internal fields calculated post-parsing
     overall_score: float = 0.0
@@ -71,26 +71,12 @@ class ResumeFeedback(BaseModel):
 
 def _default_feedback(domain: str = "software_engineering") -> ResumeFeedback:
     return ResumeFeedback(
+        overview_summary="Analysis failed. LLM response could not be parsed.",
+        skills=SkillsAnalysis(matched_core_skills=[], missing_critical_skills=[], transferable_skills=[]),
+        credibility=CredibilityMetrics(quantifiable_impact="N/A", star_method_adherence="N/A", credibility_gaps=[]),
+        results=ResultsAndOutcomes(final_blended_score=0, predicted_technical_questions=[], predicted_behavioral_questions=[]),
         overall_score=0.0,
-        llm_ats_fit_score=0.0,
-        domain=domain,
-        dimension_scores=DimensionScores(
-            skills_match=0.0,
-            experience=0.0,
-            education=0.0,
-            projects=0.0,
-            presentation=0.0
-        ),
-        improvement_tips=[
-            ResumeTip(
-                category="presentation",
-                issue_found="LLM response could not be parsed.",
-                actionable_fix="Retry the request or check the Groq API key.",
-                impact="high",
-                star_missing=False
-            )
-        ],
-        hr_red_flags=["Analysis failed. Default fallback applied."]
+        domain=domain
     )
 
 
@@ -233,64 +219,13 @@ You have been given:
   - Pre-parsed metadata (experience years, education, certifications, formatting quality)
   - A list of skills explicitly missing from the resume
 
-Your task: evaluate the resume across 5 independent dimensions and produce actionable improvement tips. Most importantly, provide a holistic `llm_ats_fit_score` (0-100) that mimics how advanced AI models like Claude or Gemini would score this candidate for the role (taking into account transferable skills, potential, and overall narrative, not just strict keyword matching).
-Respond ONLY with a raw JSON object ΓÇö no markdown, no extra text.
+Your task: Evaluate the resume strictly against the provided job description and generate feedback across 4 core pillars:
+1. Overview: A concise 2-sentence executive summary of the candidate's core identity, background, and alignment.
+2. Skills: Analyze core skills matched, missing critical requirements, and transferable skills (e.g., "Java experience transfers to C#").
+3. Credibility: Evaluate quantifiable impact (metrics/numbers) and STAR method adherence, and list any credibility gaps (e.g., claiming a skill without evidence).
+4. Results: Provide a holistic final_blended_score (0-100) and generate 3 predicted technical questions and 3 behavioral questions based on the candidate's exact resume claims.
 
-JSON structure:
-{
-  "llm_ats_fit_score": <float 0-100>, // Holistic ATS fit score evaluating the candidate's true potential and alignment with the JD
-  "dimension_scores": {
-    "skills_match":  <float 0-10>,   // Match between resume skills and JD requirements
-    "experience":    <float 0-10>,   // Depth, relevance, and years of work experience
-    "education":     <float 0-10>,   // Degree relevance and institution prestige
-    "projects":      <float 0-10>,   // Quality, complexity and relevance of projects
-    "presentation":  <float 0-10>    // Clarity, formatting, quantified achievements
-  },
-  "improvement_tips": [
-    {
-      "category":       <"skills_match"|"experience"|"education"|"projects"|"presentation">,
-      "issue_found":    <specific, concrete issue ΓÇö cite the actual resume text>,
-      "actionable_fix": <step-by-step fix with examples ΓÇö not generic advice>,
-      "impact":         <"high"|"medium"|"low">,
-      "star_missing":   <true if this bullet/entry lacks a quantified Result>
-    }
-  ],
-  "hr_red_flags": [
-    <list of strings detailing critical HR red flags like unintentional age bias, vague wording, repetitive clichés, tone mismatches>
-  ]
-}
-
-Scoring rubric:
-- llm_ats_fit_score:
-  - 90-100: Candidate meets all core tech requirements AND provides quantifiable metrics using the STAR framework (e.g., "Optimized ML pipeline latency by 40%").
-  - 70-89: Candidate has the core tech stack but lacks metrics or impact statements.
-  - Below 70: Candidate is missing primary technical skills.
-- skills_match: 0-3 if major required skills absent; 4-6 if partial; 7-10 if strong match
-- experience: Score based on how well the candidate's years of experience matches the Job Description. 0-3 if significantly below JD requirements; 4-7 if close; 8-10 if they meet or exceed the JD requirements. (Do NOT penalize students/fresh grads if the JD is for an entry-level/internship role).
-- education: 0-3 if unrelated; 4-6 if partially relevant; 7-10 if directly relevant degree (NOTE: If the Job Description asks for a Diploma and the candidate possesses a higher degree like a B.Tech or M.Tech in the same field, you MUST count this as fully satisfying the educational requirement and score 7-10)
-- projects: 0-3 if no/trivial projects; 4-6 if basic; 7-10 if impressive, relevant, quantified projects
-- presentation: 0-3 if poorly structured; 4-6 if average; 7-10 if professional with metrics throughout
-
-Rules:
-- llm_ats_fit_score should be highly realistic but constructive. A great resume that misses a few keywords but shows strong transferable skills should score high (80-95). A completely irrelevant resume should score low (20-40).
-- Score 9+ for dimensions only for exceptional candidates.
-- Most candidates score 5-8 across dimensions.
-- Generate between 2 to 7 high-impact actionable improvement tips. Do NOT arbitrarily generate exactly 1 tip per dimension. Focus only on the weakest areas that will actually move the needle.
-- Every tip's actionable_fix MUST be specific to this resume ΓÇö not generic.
-- Set star_missing=true for any experience bullet that describes a task without measuring its outcome.
-- impact="high" if fixing this tip would boost ATS score by 10+ points.
-- Identify "HR Red Flags" such as obvious grammar errors, extreme exaggerations, over-used buzzwords (e.g. "synergy"), or discriminatory/biased language.
-
----
-FEW-SHOT EXAMPLES:
-
-Example 1 (skills_match, high impact):
-issue_found: "Resume lists 'Machine Learning' as a skill but never mentions PyTorch, TensorFlow, or scikit-learn, all of which are explicitly required in the JD."
-actionable_fix: "1. Add a Technical Skills section at the top listing exact JD libraries: PyTorch, TensorFlow, scikit-learn. 2. In each relevant project bullet, name the library used: 'Built image classifier using PyTorch CNN achieving 94% accuracy on CIFAR-10.'"
-
-Example 2 (experience, star_missing=true):
-issue_found: "Intern role bullet reads 'Wrote code for backend endpoints' ΓÇö purely task-oriented with no outcome, scale, or metric."
-actionable_fix: "Rewrite using the XYZ format: 'Designed and deployed 5 REST API endpoints in FastAPI, reducing average response time by 30% and enabling 2 new product features shipped to 10,000+ users.'"
+Respond ONLY with a raw JSON object matching the requested schema. Do NOT wrap in markdown.
 """
 
 
@@ -345,13 +280,25 @@ def generate_strict_feedback(
         "---\n\n"
     )
 
+    import json
+    metadata = {
+        "experience_years": experience_years,
+        "highest_degree": highest_degree,
+        "certifications": certifications,
+        "sections_found": sections_found,
+        "formatting_score": formatting_score,
+        "action_verb_rate": action_verb_rate,
+        "quantification_rate": quantification_rate
+    }
+    
     user_content = (
         "Please evaluate the following resume against the job description. "
         "You MUST output ONLY a valid JSON object. "
         "Use the pre-parsed metadata above as ground truth ΓÇö do NOT contradict it.\n\n"
         + structured_context
-        + f"Target Job Description:\n{job_description or 'Not provided'}\n\n"
-        + f"Candidate Resume:\n{resume_text[:6000]}\n\n"
+        + f"<job_description>\n{job_description or 'Not provided'}\n</job_description>\n\n"
+        + f"<resume>\n{resume_text[:6000]}\n</resume>\n\n"
+        + "Evaluate strictly based on the system prompt guidelines and respond with JSON."
     )
 
     try:
@@ -388,27 +335,9 @@ def generate_strict_feedback(
         print(f"[llm_engine] JSON decode error: {e}\nRaw:\n{raw}", file=sys.stderr)
         return _default_feedback(domain), domain, scorer_weights
 
-    # ── Compute weighted overall score in Python ──
-    total_weight = 0.0
-    weighted_sum = 0.0
-    dim_scores = feedback.dimension_scores.model_dump()
-    for key, weight in dim_weights.items():
-        raw_score = dim_scores.get(key)
-        if raw_score is not None:
-            s = max(0.0, min(10.0, float(raw_score)))
-            weighted_sum += s * weight
-            total_weight += weight
-
-    if total_weight > 0:
-        feedback.overall_score = round(weighted_sum / total_weight, 1)
-    else:
-        feedback.overall_score = 0.0
-
+    # ── Compute overall score ──
+    feedback.overall_score = float(feedback.results.final_blended_score)
     feedback.domain = domain
-
-    # Sort tips by impact: high → medium → low
-    _impact_order = {"high": 0, "medium": 1, "low": 2}
-    feedback.improvement_tips.sort(key=lambda t: _impact_order.get(t.impact, 1))
 
     return feedback, domain, scorer_weights
 
@@ -501,8 +430,8 @@ TARGET JOB DESCRIPTION:
 MISSING KEYWORDS TO INJECT NATURALLY:
 {', '.join(missing_keywords) if missing_keywords else 'None'}
 
-IMPROVEMENT TIPS TO APPLY:
-{chr(10).join([f"- {t['actionable_fix']}" for t in improvement_tips]) if improvement_tips else 'None'}
+IMPROVEMENT TIPS TO APPLY (Credibility Gaps & Missing Skills):
+{chr(10).join([f"- {gap}" for gap in improvement_tips.get('credibility', {}).get('credibility_gaps', [])] + [f"- Add skill: {skill}" for skill in improvement_tips.get('skills', {}).get('missing_critical_skills', [])]) if improvement_tips else 'None'}
 
 ORIGINAL RESUME TEXT:
 <original_resume>
@@ -573,7 +502,7 @@ def generate_json_edits(
     resume_text: str,
     job_description: str,
     missing_keywords: list[str],
-    improvement_tips: list[dict],
+    improvement_tips: dict,
 ) -> list[dict]:
     """
     Uses the 120B model to parse the resume and suggest line-by-line edits.

@@ -343,7 +343,7 @@ class AutofixRequest(BaseModel):
     resume_url: str
     job_description: str
     missing_keywords: list[str]
-    improvement_tips: list[dict]
+    improvement_tips: dict
     output_format: str = "tex"
 
 @app.post("/api/autofix")
@@ -363,7 +363,7 @@ class SuggestEditsRequest(BaseModel):
     resume_url: str
     job_description: str
     missing_keywords: list[str]
-    improvement_tips: list[dict]
+    improvement_tips: dict
 
 @app.post("/api/suggest-edits")
 @limiter.limit("10/minute")

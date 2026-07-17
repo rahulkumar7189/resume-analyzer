@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UploadCloud, FileText, User, LogOut, Loader2, CheckCircle2, XCircle, Briefcase, Zap, History, ChevronRight, AlertTriangle, FileWarning, BarChart, Sun, Moon, LayoutDashboard, Download, RefreshCw, Sparkles, Menu } from 'lucide-react'
+import { UploadCloud, FileText, User, LogOut, Loader2, CheckCircle2, XCircle, Briefcase, Zap, History, ChevronRight, AlertTriangle, FileWarning, BarChart, Sun, Moon, LayoutDashboard, Download, RefreshCw, Sparkles, Menu, Code2, Lightbulb, GraduationCap } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -219,7 +219,27 @@ export default function CandidateDashboard() {
   const router = useRouter()
   const { addToast } = useToast()
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    setMounted(true)
+    const savedResult = sessionStorage.getItem('neuroats_candidate_result')
+    if (savedResult) {
+      try { setResult(JSON.parse(savedResult)) } catch(e) {}
+    }
+    const savedJobDesc = sessionStorage.getItem('neuroats_job_desc')
+    if (savedJobDesc) {
+      setJobDescription(savedJobDesc)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (result) sessionStorage.setItem('neuroats_candidate_result', JSON.stringify(result))
+    else sessionStorage.removeItem('neuroats_candidate_result')
+  }, [result])
+
+  useEffect(() => {
+    if (jobDescription) sessionStorage.setItem('neuroats_job_desc', jobDescription)
+    else sessionStorage.removeItem('neuroats_job_desc')
+  }, [jobDescription])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -336,15 +356,36 @@ export default function CandidateDashboard() {
           const pollData = await pollRes.json();
           
           if (pollData.status === 'success') {
-            setResult(pollData.data_inserted[0] || pollData.data_inserted.data)
+            if (pollData.data_inserted) {
+              setResult(pollData.data_inserted[0] || pollData.data_inserted.data)
+            } else {
+              addToast("Analysis completed but no data returned.", "error")
+            }
             isComplete = true;
           } else if (pollData.status === 'error') {
             addToast(pollData.detail || "Error analyzing resume.", 'error')
             isComplete = true;
+          } else if (pollRes.status === 429) {
+            addToast("Too many requests. Please wait and try again.", 'error')
+            isComplete = true;
+          } else if (!pollData.status) {
+            addToast(pollData.detail || "Unknown error during polling.", 'error')
+            isComplete = true;
           }
         }
       } else if (data.status === 'success') {
-        setResult(data.data_inserted[0] || data.data_inserted.data)
+        let resultData = data.data_inserted;
+        if (!resultData && data.detail) {
+          try {
+            const parsed = JSON.parse(data.detail);
+            resultData = Array.isArray(parsed) ? parsed : [parsed];
+          } catch(e) {}
+        }
+        if (resultData) {
+          setResult(resultData[0] || resultData.data);
+        } else {
+          addToast("Error: No data returned from server.", 'error');
+        }
       } else {
         addToast(data.detail || "Error analyzing resume.", 'error')
       }
@@ -360,6 +401,9 @@ export default function CandidateDashboard() {
   }
 
   if (!mounted) return null;
+
+  const feedback = result?.improvement_tips || null;
+  const hasFeedback = feedback && feedback.overview_summary;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-300">
@@ -889,19 +933,109 @@ export default function CandidateDashboard() {
                           </div>
                         )}
 
-                        {result.improvement_tips?.length > 0 && (
-                          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex-1">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/60 mb-4">Improvement Suggestions</h3>
-                            <div className="space-y-4">
-                              {result.improvement_tips.slice(0, 3).map((tip: any, i: number) => (
-                                <div key={i} className="text-sm">
-                                  <div className="font-bold flex items-center gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${tip.impact === 'high' ? 'bg-destructive' : 'bg-primary'}`}></span>
-                                    Fix: {tip.category}
-                                  </div>
-                                  <p className="text-foreground/70 mt-1 pl-4 leading-relaxed">{tip.actionable_fix}</p>
+                        {hasFeedback && (
+                          <div className="space-y-6">
+                            {/* 1. Overview */}
+                            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex-1 relative overflow-hidden">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-3 flex items-center gap-2">
+                                <LayoutDashboard className="w-4 h-4" /> 1. Overview (The Recruiter's Glance)
+                              </h3>
+                              <p className="text-sm text-foreground/80 leading-relaxed bg-background p-4 rounded-xl border border-border">
+                                {feedback.overview_summary}
+                              </p>
+                            </div>
+
+                            {/* 2. Skills */}
+                            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex-1 relative overflow-hidden">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4 flex items-center gap-2">
+                                <Code2 className="w-4 h-4" /> 2. Skills (The Hybrid Match)
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-background rounded-xl p-4 border border-border">
+                                  <h4 className="text-xs font-bold text-foreground/60 uppercase mb-2">Transferable Skills</h4>
+                                  <ul className="space-y-1">
+                                    {feedback.skills?.transferable_skills?.map((s: string, i: number) => (
+                                      <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
+                                        <span className="text-emerald-500 mt-1">✓</span> {s}
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
-                              ))}
+                                <div className="bg-background rounded-xl p-4 border border-border">
+                                  <h4 className="text-xs font-bold text-foreground/60 uppercase mb-2">Missing Critical Skills</h4>
+                                  <ul className="space-y-1">
+                                    {feedback.skills?.missing_critical_skills?.map((s: string, i: number) => (
+                                      <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
+                                        <span className="text-destructive mt-1">✕</span> {s}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 3. Credibility */}
+                            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex-1 relative overflow-hidden">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-4 flex items-center gap-2">
+                                <Briefcase className="w-4 h-4" /> 3. Credibility (The Trust Factor)
+                              </h3>
+                              <div className="space-y-4">
+                                <div className="bg-background rounded-xl p-4 border border-border">
+                                  <h4 className="text-xs font-bold text-foreground/60 uppercase mb-1">Quantifiable Impact</h4>
+                                  <p className="text-sm text-foreground/80">{feedback.credibility?.quantifiable_impact}</p>
+                                </div>
+                                <div className="bg-background rounded-xl p-4 border border-border">
+                                  <h4 className="text-xs font-bold text-foreground/60 uppercase mb-1">STAR Method Adherence</h4>
+                                  <p className="text-sm text-foreground/80">{feedback.credibility?.star_method_adherence}</p>
+                                </div>
+                                {feedback.credibility?.credibility_gaps?.length > 0 && (
+                                  <div className="bg-destructive/5 rounded-xl p-4 border border-destructive/20">
+                                    <h4 className="text-xs font-bold text-destructive uppercase mb-2 flex items-center gap-1">
+                                      <AlertTriangle className="w-3 h-3" /> Credibility Gaps Detected
+                                    </h4>
+                                    <ul className="space-y-1 pl-4 list-disc text-sm text-destructive">
+                                      {feedback.credibility.credibility_gaps.map((gap: string, i: number) => (
+                                        <li key={i}>{gap}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 4. Results */}
+                            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex-1 relative overflow-hidden">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-4 flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4" /> 4. Results (The Outcome Predictor)
+                              </h3>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div className="bg-background rounded-xl p-4 border border-border">
+                                  <h4 className="text-xs font-bold text-foreground/60 uppercase mb-3 text-center">Predicted Technical Questions</h4>
+                                  <ul className="space-y-2">
+                                    {feedback.results?.predicted_technical_questions?.map((q: string, i: number) => (
+                                      <li key={i} className="text-sm text-foreground/80 bg-surface p-3 rounded-lg border border-border/50 shadow-sm flex items-start gap-2">
+                                        <div className="min-w-[20px] h-5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div>
+                                        {q}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                                <div className="bg-background rounded-xl p-4 border border-border">
+                                  <h4 className="text-xs font-bold text-foreground/60 uppercase mb-3 text-center">Predicted Behavioral Questions</h4>
+                                  <ul className="space-y-2">
+                                    {feedback.results?.predicted_behavioral_questions?.map((q: string, i: number) => (
+                                      <li key={i} className="text-sm text-foreground/80 bg-surface p-3 rounded-lg border border-border/50 shadow-sm flex items-start gap-2">
+                                        <div className="min-w-[20px] h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div>
+                                        {q}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )}

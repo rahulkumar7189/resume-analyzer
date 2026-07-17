@@ -121,7 +121,9 @@ def _parse_jd_skill_weights(
 
     prompt = (
         "You are an expert technical recruiter. "
-        "Read this job description and extract all required skills, tools and technologies. "
+        "Read this job description and extract ONLY specific technical skills, programming languages, tools, and frameworks. "
+        "DO NOT extract soft skills, educational degrees, or years of experience. "
+        "Each skill MUST be a concise 1-3 word noun phrase. "
         "Classify each as 'core' (explicitly required, must-have) or "
         "'preferred' (nice-to-have, bonus). "
         "Respond ONLY with raw JSON (no markdown):\n"

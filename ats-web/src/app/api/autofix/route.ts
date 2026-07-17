@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   // 2. Enforce Rate Limiting (10 requests per minute)
   const identifier = session.user.email || 'unknown';
-  const { success, remaining, reset } = rateLimit(`suggest_edits_${identifier}`, 10, 60000);
+  const { success, remaining, reset } = rateLimit(`autofix_${identifier}`, 10, 60000);
   
   if (!success) {
     return NextResponse.json({ detail: 'Too many requests. Please try again later.' }, { 
@@ -30,9 +30,9 @@ export async function POST(req: Request) {
     const payload = await req.json();
 
     return new Promise<Response>((resolve) => {
-      grpcClient.SuggestEdits(payload, (err: any, response: any) => {
+      grpcClient.AutofixResume(payload, (err: any, response: any) => {
         if (err) {
-          console.error('[gRPC SuggestEdits Error]', err);
+          console.error('[gRPC Autofix Error]', err);
           resolve(NextResponse.json({ detail: err.message || 'gRPC Error' }, { status: 500 }));
         } else {
           resolve(NextResponse.json({
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('SuggestEdits route error:', error);
+    console.error('Autofix route error:', error);
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 });
   }
 }
